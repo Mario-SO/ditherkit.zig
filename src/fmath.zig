@@ -1,21 +1,58 @@
-//! Float helpers that reproduce Rust's `f32` semantics, in one place so the
-//! backend can be tuned without touching rasterizers.
-//!
-//! Rust lowers `f32::powf` to the platform libm `powf`. When libc is linked we
-//! call that same function (identical results, ~30% faster than
-//! `std.math.pow`); otherwise (freestanding, wasm, no-libc builds) we fall back
-//! to `std.math.pow`. Parity tests run against both paths.
+//! Floating-point operations shared with the Rust port. Use Zig intrinsics
+//! for operations the compiler can lower directly. Other libm calls have
+//! Zig fallbacks for freestanding and other libc-free targets.
 
 const std = @import("std");
 const builtin = @import("builtin");
 
 const libm = struct {
+    extern "c" fn expf(f32) f32;
+    extern "c" fn atan2f(f32, f32) f32;
+    extern "c" fn log10(f64) f64;
+    extern "c" fn pow(f64, f64) f64;
     extern "c" fn powf(f32, f32) f32;
 };
 
 /// Rust `f32::powf`.
 pub inline fn powf(x: f32, y: f32) f32 {
     return if (builtin.link_libc) libm.powf(x, y) else std.math.pow(f32, x, y);
+}
+
+pub inline fn sinf(x: f32) f32 {
+    return @sin(x);
+}
+
+pub inline fn expf(x: f32) f32 {
+    return if (builtin.link_libc) libm.expf(x) else @exp(x);
+}
+
+pub inline fn cosf(x: f32) f32 {
+    return @cos(x);
+}
+
+pub inline fn atan2f(y: f32, x: f32) f32 {
+    return if (builtin.link_libc) libm.atan2f(y, x) else std.math.atan2(y, x);
+}
+
+pub inline fn log10(x: f64) f64 {
+    return if (builtin.link_libc) libm.log10(x) else @log10(x);
+}
+
+pub inline fn pow(x: f64, y: f64) f64 {
+    return if (builtin.link_libc) libm.pow(x, y) else std.math.pow(f64, x, y);
+}
+
+/// Rust float clamp retains NaN inputs.
+pub inline fn clamp(x: anytype, low: @TypeOf(x), high: @TypeOf(x)) @TypeOf(x) {
+    return if (x < low) low else if (x > high) high else x;
+}
+
+/// Convert using Rust's saturating float-to-integer cast (NaN becomes zero).
+pub inline fn saturatingInt(comptime Int: type, x: anytype) Int {
+    if (std.math.isNan(x)) return 0;
+    if (x >= @as(@TypeOf(x), @floatFromInt(std.math.maxInt(Int)))) return std.math.maxInt(Int);
+    if (x <= @as(@TypeOf(x), @floatFromInt(std.math.minInt(Int)))) return std.math.minInt(Int);
+    return @intFromFloat(x);
 }
 
 /// Rust `f32::powi`: binary exponentiation by squaring, the same algorithm

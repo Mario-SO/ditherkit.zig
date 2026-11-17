@@ -92,8 +92,8 @@ fn toU8(v: f32) u8 {
 
 fn oklchToSrgb(l: f32, c: f32, h: f32) ?Rgba {
     const hr = math.degreesToRadians(h);
-    const a = c * @cos(hr);
-    const b = c * @sin(hr);
+    const a = c * fmath.cosf(hr);
+    const b = c * fmath.sinf(hr);
     const l_ = l + 0.39633778 * a + 0.21580376 * b;
     const m_ = l - 0.105561346 * a - 0.06385417 * b;
     const s_ = l - 0.08948418 * a - 1.2914855 * b;

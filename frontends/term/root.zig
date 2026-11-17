@@ -1,21 +1,32 @@
-//! # ditherkit_term
-//!
-//! Terminal frontend: paints a `PixelGrid` with truecolor ANSI escapes.
-//! Stands in for `dither-ratatui` (Zig has no Ratatui), starting with the
-//! port of `dither-ratatui/src/raster.rs`.
-//!
-//! Each terminal cell shows two vertically stacked pixels using the upper
-//! half block `▀` (foreground = top pixel, background = bottom pixel). Since
-//! a cell is roughly twice as tall as it is wide, pixels come out square.
-//!
-//! TODO(port): widgets.rs (Button/Avatar/Gradient/Background/Meter/Legend),
-//! charts.rs (Chart/PieChart/RadarChart/Sparkline + hit testing), theme.rs.
+//! Truecolor ANSI terminal frontend. Compose widgets in a Buffer or
+//! stream an existing PixelGrid as rows of half-block glyphs.
 
 const std = @import("std");
 const dk = @import("ditherkit");
 const Rgba = dk.Rgba;
 const PixelGrid = dk.PixelGrid;
 const Writer = std.Io.Writer;
+
+const cells = @import("buffer.zig");
+pub const Buffer = cells.Buffer;
+pub const Rect = cells.Rect;
+pub const Style = cells.Style;
+pub const Theme = @import("theme.zig").Theme;
+pub const widgets = @import("widgets.zig");
+pub const Avatar = widgets.Avatar;
+pub const Background = widgets.Background;
+pub const Button = widgets.Button;
+pub const ButtonState = widgets.ButtonState;
+pub const Gradient = widgets.Gradient;
+pub const Legend = widgets.Legend;
+pub const LegendItem = widgets.LegendItem;
+pub const Meter = widgets.Meter;
+pub const labelColor = widgets.labelColor;
+pub const charts = @import("charts.zig");
+pub const Chart = charts.Chart;
+pub const PieChart = charts.PieChart;
+pub const RadarChart = charts.RadarChart;
+pub const Sparkline = charts.Sparkline;
 
 /// Pixel resolution of a `cols` x `rows` cell area: one pixel per column,
 /// two per row.
@@ -32,9 +43,7 @@ pub fn paint(w: *Writer, grid: PixelGrid, bg: Rgba) Writer.Error!void {
         for (0..grid.width) |cx| {
             const top = (grid.get(cx, cy * 2) orelse Rgba.transparent).over(bg);
             const bottom = (grid.get(cx, cy * 2 + 1) orelse Rgba.transparent).over(bg);
-            try w.print("\x1b[38;2;{d};{d};{d}m\x1b[48;2;{d};{d};{d}m▀", .{
-                top.r, top.g, top.b, bottom.r, bottom.g, bottom.b,
-            });
+            try cells.emit(w, '▀', .{ .foreground = top }, bottom);
         }
         try w.writeAll("\x1b[0m\n");
     }
@@ -51,4 +60,10 @@ test "paint emits one line per two pixel rows" {
     const out = w.buffered();
     try std.testing.expectEqual(2, std.mem.count(u8, out, "\n"));
     try std.testing.expect(std.mem.startsWith(u8, out, "\x1b[38;2;255;255;255m\x1b[48;2;0;0;0m▀"));
+}
+
+test {
+    std.testing.refAllDecls(@This());
+    std.testing.refAllDecls(widgets);
+    std.testing.refAllDecls(charts);
 }

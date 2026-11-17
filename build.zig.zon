@@ -3,8 +3,14 @@
     .version = "0.1.0",
     .fingerprint = 0xe393d7b974250a9f, // Changing this has security and trust implications.
     .minimum_zig_version = "0.17.0",
-    // The core has no dependencies, mirroring `dither-core`.
-    .dependencies = .{},
+    .dependencies = .{
+        // Only used to generate SDL3 bindings when -Dsdl is enabled.
+        .translate_c = .{
+            .url = "git+https://codeberg.org/ziglang/translate-c?ref=2.0.0#0da7a16c3235b935b82421646076e0657cda21f6",
+            .hash = "translate_c-2.0.0-Q_BUWltOBwA0229IE8wwSxxGzOxyRso3hvcb1nN8oJX_",
+            .lazy = true,
+        },
+    },
     .paths = .{
         "build.zig",
         "build.zig.zon",

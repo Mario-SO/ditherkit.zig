@@ -7,7 +7,7 @@ const Rgba = @import("color.zig").Rgba;
 const dither = @import("dither.zig");
 const Matrix = dither.Matrix;
 const hash01 = dither.hash01;
-const powi = @import("fmath.zig").powi;
+const fmath = @import("fmath.zig");
 
 /// A width x height buffer of optional pixels. `null` is transparent.
 ///
@@ -20,7 +20,7 @@ pub const PixelGrid = struct {
     cells: []?Rgba,
 
     pub fn init(gpa: Allocator, width: usize, height: usize) Allocator.Error!PixelGrid {
-        const cells = try gpa.alloc(?Rgba, width * height);
+        const cells = try gpa.alloc(?Rgba, std.math.mul(usize, width, height) catch return error.OutOfMemory);
         @memset(cells, null);
         return .{ .width = width, .height = height, .cells = cells };
     }
@@ -150,7 +150,7 @@ pub const PixelGrid = struct {
                 if (!anywhere and self.at(x, y) == null) continue;
                 const phase = hash01(y, x ^ 0x1b56) * std.math.tau;
                 const speed = 1.5 + 2.5 * hash01(x ^ 0x77, y);
-                const wink = powi(@max(@sin(time * speed + phase), 0.0), 12);
+                const wink = fmath.powi(@max(fmath.sinf(time * speed + phase), 0.0), 12);
                 if (wink > 0.35) self.set(x, y, c.fade(wink));
             }
         }
@@ -170,7 +170,7 @@ pub const RunIterator = struct {
     x: usize = 0,
     y: usize = 0,
 
-    pub fn next(it: *RunIterator) ?Run {
+    pub inline fn next(it: *RunIterator) ?Run {
         const g = it.grid;
         while (it.y < g.height) : ({
             it.y += 1;
@@ -183,7 +183,11 @@ pub const RunIterator = struct {
                     continue;
                 };
                 const start = it.x;
-                while (it.x < row.len and row[it.x] != null and row[it.x].?.eql(c)) it.x += 1;
+                it.x += 1;
+                while (it.x < row.len) : (it.x += 1) {
+                    const next_color = row[it.x] orelse break;
+                    if (!next_color.eql(c)) break;
+                }
                 return .{ .x = start, .y = it.y, .len = it.x - start, .color = c };
             }
         }

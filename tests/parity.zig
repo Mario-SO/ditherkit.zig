@@ -1,8 +1,8 @@
 //! Pixel parity against upstream Rust `dither-core`.
 //!
 //! Each scene in `scenes.zig` is rendered and compared byte for byte with the
-//! grid the Rust twin wrote to `golden/`. Regenerate the goldens with
-//! `zig build golden` (needs cargo) after bumping the pinned upstream rev.
+//! grid rendered by the external Rust reference harness. See PORTING.md for
+//! regenerating goldens after bumping the pinned upstream revision.
 
 const std = @import("std");
 const dk = @import("ditherkit");
@@ -20,6 +20,15 @@ const all = [_]Scene{
     .{ .name = "fills", .golden = @embedFile("golden/fills.grid"), .render = scenes.fills },
     .{ .name = "bloom", .golden = @embedFile("golden/bloom.grid"), .render = scenes.bloom },
     .{ .name = "sparkle", .golden = @embedFile("golden/sparkle.grid"), .render = scenes.sparkle },
+    .{ .name = "gradient", .golden = @embedFile("golden/gradient.grid"), .render = scenes.gradient },
+    .{ .name = "background", .golden = @embedFile("golden/background.grid"), .render = scenes.background },
+    .{ .name = "button", .golden = @embedFile("golden/button.grid"), .render = scenes.button },
+    .{ .name = "avatar", .golden = @embedFile("golden/avatar.grid"), .render = scenes.avatar },
+    .{ .name = "meter", .golden = @embedFile("golden/meter.grid"), .render = scenes.meter },
+    .{ .name = "cartesian", .golden = @embedFile("golden/cartesian.grid"), .render = scenes.cartesian },
+    .{ .name = "sparkline", .golden = @embedFile("golden/sparkline.grid"), .render = scenes.sparkline },
+    .{ .name = "pie", .golden = @embedFile("golden/pie.grid"), .render = scenes.pie },
+    .{ .name = "radar", .golden = @embedFile("golden/radar.grid"), .render = scenes.radar },
 };
 
 const header_len = 12;
@@ -60,18 +69,13 @@ fn expectParity(scene: Scene) !void {
     }
 }
 
-test "shades match Rust" {
-    try expectParity(all[0]);
-}
-test "matrices match Rust" {
-    try expectParity(all[1]);
-}
-test "fills match Rust" {
-    try expectParity(all[2]);
-}
-test "bloom matches Rust" {
-    try expectParity(all[3]);
-}
-test "sparkle matches Rust" {
-    try expectParity(all[4]);
+test "scenes match Rust" {
+    var failed = false;
+    for (all) |scene| {
+        expectParity(scene) catch |err| {
+            if (err != error.PixelMismatch) return err;
+            failed = true;
+        };
+    }
+    try std.testing.expect(!failed);
 }

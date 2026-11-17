@@ -27,10 +27,26 @@ pub const Bloom = grid.Bloom;
 pub const PixelGrid = grid.PixelGrid;
 pub const Run = grid.Run;
 
-// TODO(port): re-export once `paint.zig` / `chart.zig` are ported:
-// Background, ButtonStyle, Direction, Field, Gradient, avatar, button_texture, meter,
-// Cartesian, CartesianKind, Pie, PieGeometry, Radar, RadarGeometry, Scale, Series,
-// Slice, format_value, sparkline.
+pub const Direction = paint.Direction;
+pub const Gradient = paint.Gradient;
+pub const Field = paint.Field;
+pub const Background = paint.Background;
+pub const ButtonStyle = paint.ButtonStyle;
+pub const buttonTexture = paint.buttonTexture;
+pub const avatar = paint.avatar;
+pub const meter = paint.meter;
+
+pub const Series = chart.Series;
+pub const Scale = chart.Scale;
+pub const CartesianKind = chart.CartesianKind;
+pub const Cartesian = chart.Cartesian;
+pub const Slice = chart.Slice;
+pub const Pie = chart.Pie;
+pub const PieGeometry = chart.PieGeometry;
+pub const Radar = chart.Radar;
+pub const RadarGeometry = chart.RadarGeometry;
+pub const formatValue = chart.formatValue;
+pub const sparkline = chart.sparkline;
 
 test {
     std.testing.refAllDecls(@This());

@@ -1,8 +1,8 @@
 //! Performance benchmarks. Same workloads and report as the Rust twin in
-//! `tools/rust-ref/src/bench.rs`, so the two can be compared line by line:
+//! the external Rust reference harness for line-by-line comparison.
+//! See PORTING.md for the reference command.
 //!
-//!   zig build bench        # this file, always ReleaseFast
-//!   zig build bench-rust   # upstream Rust (needs cargo)
+//!   zig build bench        # optimized for speed
 
 const std = @import("std");
 const dk = @import("ditherkit");
@@ -71,6 +71,16 @@ fn runs(g: *const dk.PixelGrid) !u64 {
     return sum;
 }
 
+fn renderScene(comptime render: fn (std.mem.Allocator) anyerror!dk.PixelGrid) fn (std.mem.Allocator) anyerror!u64 {
+    return struct {
+        fn run(gpa: std.mem.Allocator) !u64 {
+            var g = try render(gpa);
+            defer g.deinit(gpa);
+            return g.litCount();
+        }
+    }.run;
+}
+
 pub fn main(init: std.process.Init) !void {
     const io = init.io;
     // Same allocator class as Rust's global allocator (libc malloc).
@@ -88,5 +98,14 @@ pub fn main(init: std.process.Init) !void {
     var g = try scenes.seed(gpa, 512, 512);
     defer g.deinit(gpa);
     try measure(io, w, "runs", @as(*const dk.PixelGrid, &g), runs);
+    try measure(io, w, "gradient", gpa, renderScene(scenes.gradient));
+    try measure(io, w, "background", gpa, renderScene(scenes.background));
+    try measure(io, w, "button", gpa, renderScene(scenes.button));
+    try measure(io, w, "avatar", gpa, renderScene(scenes.avatar));
+    try measure(io, w, "meter", gpa, renderScene(scenes.meter));
+    try measure(io, w, "cartesian", gpa, renderScene(scenes.cartesian));
+    try measure(io, w, "sparkline", gpa, renderScene(scenes.sparkline));
+    try measure(io, w, "pie", gpa, renderScene(scenes.pie));
+    try measure(io, w, "radar", gpa, renderScene(scenes.radar));
     try w.flush();
 }

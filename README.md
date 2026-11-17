@@ -5,11 +5,12 @@
 Ordered-dither charts, buttons, gradients and backgrounds for Zig — a port of
 [dither-kit-rs](https://github.com/DeepanshuMishraa/dither-kit-rs).
 
-**Status: early port.** The core primitives (colors, tones, matrices, fills,
-`PixelGrid`, bloom, sparkle, easing) are ported and tested; the rasterizers
-(gradients, backgrounds, charts, …) are not yet. See [PORTING.md](PORTING.md).
+The rendering core includes every paint and chart rasterizer from the pinned
+Rust release. The ANSI frontend adds widgets and chart interaction geometry.
+An optional SDL3 frontend draws the same grids in native windows. See
+[PORTING.md](PORTING.md) for frontend coverage.
 
-Requires **Zig 0.17.0**. No dependencies.
+Requires **Zig 0.17.0**. The rendering core and ANSI frontend have no dependencies.
 
 ## Project rules
 
@@ -33,15 +34,15 @@ src/                 module `ditherkit`        ← dither-core (zero deps)
   dither.zig           Matrix, Fill, hash2/hash01        ✅
   ease.zig             outCubic, inOutCubic, approach    ✅
   grid.zig             PixelGrid, Run(s), Bloom, sparkle ✅
-  fmath.zig            Rust-compatible powf/powi
-  paint.zig            gradient, background, button, avatar, meter  ⏳
-  chart.zig            cartesian, pie, radar, sparkline              ⏳
+  fmath.zig            Rust-compatible float math
+  paint.zig            gradient, background, button, avatar, meter
+  chart.zig            cartesian, pie, radar, sparkline
 frontends/
-  term/root.zig      module `ditherkit_term`   ← dither-ratatui (raw ANSI)
-examples/            preview (PPM contact sheet), term (terminal swatches), icon (assets/icon.svg)
+  term/root.zig      module `ditherkit_term`   ANSI widgets and charts
+  sdl/root.zig       module `ditherkit_sdl`    optional SDL3 canvas
+examples/            PPM preview, terminal gallery, SDL3 preview, project icon
 tests/               parity tests: scenes.zig + golden/*.grid from upstream Rust
-bench/               benchmarks, twin of tools/rust-ref/src/bench.rs
-tools/rust-ref/      pinned upstream Rust: renders goldens, runs benchmarks
+bench/               Zig benchmarks
 ```
 
 ## Commands
@@ -50,37 +51,55 @@ tools/rust-ref/      pinned upstream Rust: renders goldens, runs benchmarks
 zig build test                 # unit + pixel-parity tests
 zig build fmt                  # formatting check
 zig build cross                # compile for every supported target
-zig build bench                # Zig benchmarks (compare: zig build bench-rust)
-zig build golden               # regenerate goldens from upstream Rust (cargo)
+zig build bench                # run the Zig benchmarks
 zig build term                 # draw swatches in a truecolor terminal
-zig build preview -- out.ppm   # render a contact sheet
+zig build term -- --gallery    # draw the terminal widget gallery
+zig build preview -- out.ppm   # render the upstream contact sheet
+zig build desktop -Dsdl        # open the contact sheet in an SDL3 window
+zig build test -Dsdl           # also test the SDL3 canvas
 zig build icon -- assets/icon.svg  # re-render the project icon
 ```
 
-## Current numbers
+The optional desktop targets require SDL3 development headers and libraries on
+the build machine, discoverable by `pkg-config`. Zig fetches the pinned
+Translate-C package when `-Dsdl` is enabled.
 
-Parity: all scenes byte-identical to upstream (also in ReleaseFast/Safe/Small).
+## Verification
 
-Best of 3 runs, Apple Silicon, µs (lower is better):
+`zig build test` compares 14 scenes byte for byte with the pinned Rust goldens
+and runs them with and without libc. The table shows the best
+time for each workload over three runs on Apple Silicon, in microseconds.
+See [PORTING.md](PORTING.md) to regenerate the fixtures or rerun the Rust
+benchmarks with the external reference harness.
 
-| workload | Rust | Zig |
+| Workload | Rust | Zig |
 | --- | ---: | ---: |
-| shade (100k OKLCH ramps) | 3301 | 2195 |
-| matrix_fill (512²) | 142 | 126 |
-| bloom_aura (256²) | 2949 | 1174 |
-| sparkle (256²) | 130 | 113 |
-| runs (512²) | 137 | 133 |
+| shade | 3439.8 | 2343.5 |
+| matrix_fill | 142.6 | 126.4 |
+| bloom_aura | 2965.1 | 2255.5 |
+| sparkle | 115.0 | 90.8 |
+| runs | 140.2 | 123.4 |
+| gradient | 72.8 | 21.4 |
+| background | 173.6 | 134.2 |
+| button | 24.1 | 2.4 |
+| avatar | 2.2 | 0.4 |
+| meter | 22.6 | 3.2 |
+| cartesian | 209.0 | 138.0 |
+| sparkline | 32.0 | 19.8 |
+| pie | 83.6 | 51.5 |
+| radar | 49.0 | 23.3 |
 
 ## Using it
 
 ```zig
 const dk = @import("ditherkit");
 
-var grid = try dk.PixelGrid.init(gpa, 64, 32);
+const samples = [_]dk.Series{
+    .{ .label = "Requests", .tone = .blue, .values = &.{ 3, 8, 5, 9 } },
+};
+const chart: dk.Cartesian = .{ .series = &samples, .hover = 2 };
+var grid = try chart.render(gpa, 80, 32);
 defer grid.deinit(gpa);
-const blue: dk.Tone = .blue;
-grid.set(3, 4, blue.shade(0.6));
-try grid.bloom(gpa, .low);
 
 var it = grid.runs();
 while (it.next()) |run| {
