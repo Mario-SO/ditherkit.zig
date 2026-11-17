@@ -1,0 +1,17 @@
+.{
+    .name = .ditherkit,
+    .version = "0.1.0",
+    .fingerprint = 0xe393d7b974250a9f, // Changing this has security and trust implications.
+    .minimum_zig_version = "0.17.0",
+    // The core has no dependencies, mirroring `dither-core`.
+    .dependencies = .{},
+    .paths = .{
+        "build.zig",
+        "build.zig.zon",
+        "src",
+        "frontends",
+        "LICENSE-MIT",
+        "LICENSE-APACHE",
+        "README.md",
+    },
+}

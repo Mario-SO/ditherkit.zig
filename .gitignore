@@ -1,0 +1,6 @@
+.zig-cache/
+zig-out/
+*.ppm
+
+# Rust reference tool
+tools/rust-ref/target/
