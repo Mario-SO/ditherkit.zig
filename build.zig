@@ -116,6 +116,7 @@ pub fn build(b: *std.Build) void {
     const examples = [_]struct { name: []const u8, desc: []const u8 }{
         .{ .name = "preview", .desc = "Render a PPM contact sheet (zig build preview -- out.ppm)" },
         .{ .name = "term", .desc = "Draw dithered swatches in a truecolor terminal" },
+        .{ .name = "icon", .desc = "Render the project icon (zig build icon -- assets/icon.svg)" },
     };
     for (examples) |ex| {
         const exe = b.addExecutable(.{

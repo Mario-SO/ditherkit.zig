@@ -38,7 +38,7 @@ src/                 module `ditherkit`        ← dither-core (zero deps)
   chart.zig            cartesian, pie, radar, sparkline              ⏳
 frontends/
   term/root.zig      module `ditherkit_term`   ← dither-ratatui (raw ANSI)
-examples/            preview (PPM contact sheet), term (terminal swatches)
+examples/            preview (PPM contact sheet), term (terminal swatches), icon (assets/icon.svg)
 tests/               parity tests: scenes.zig + golden/*.grid from upstream Rust
 bench/               benchmarks, twin of tools/rust-ref/src/bench.rs
 tools/rust-ref/      pinned upstream Rust: renders goldens, runs benchmarks
@@ -54,6 +54,7 @@ zig build bench                # Zig benchmarks (compare: zig build bench-rust)
 zig build golden               # regenerate goldens from upstream Rust (cargo)
 zig build term                 # draw swatches in a truecolor terminal
 zig build preview -- out.ppm   # render a contact sheet
+zig build icon -- assets/icon.svg  # re-render the project icon
 ```
 
 ## Current numbers
